@@ -977,9 +977,9 @@
     const slack = () =>
       (window.innerHeight - (wrap.getBoundingClientRect().bottom + window.scrollY)) / shellZoom();
 
-    // The grid of times keeps its natural size and the plot takes the rest, up to
-    // roughly square — past that it starts reading as a thin column.
-    const H_MAX = Math.round(W / 0.95);
+    // The grid of times keeps its natural size and the plot takes all the rest.
+    // The ceiling is only a runaway guard, never reached on a phone-shaped viewport.
+    const H_MAX = 1600;
     let s = slack();
     for (let i = 0; i < 5; i++) {
       if (Math.abs(s) <= 3) break;
