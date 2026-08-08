@@ -78,6 +78,7 @@
     -webkit-tap-highlight-color: transparent;
   }
   .wrap {
+    zoom: var(--k, 1);
     max-width: 1180px;
     margin: 0 auto;
     padding: 20px 16px 40px;
@@ -359,8 +360,51 @@
     .tile-val { font-size: 21px; }
   }
 
+  /* TEMPORARY — scale probe. Remove once a value is picked. */
+  .scaler {
+    position: fixed; top: 8px; right: 8px; z-index: 50;
+    display: flex; align-items: stretch; gap: 4px;
+    padding: 4px; border-radius: 11px;
+    background: var(--surface); border: 1px solid var(--hair);
+    box-shadow: var(--shadow);
+    font-family: var(--sans);
+  }
+  .scaler button {
+    width: 34px; height: 34px; flex: none;
+    border-radius: 8px; border: 1px solid var(--hair);
+    background: var(--surface-2); color: var(--ink);
+    font-size: 17px; line-height: 1; font-family: var(--sans);
+    display: grid; place-items: center; cursor: pointer;
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  }
+  .scaler button:active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .scaler button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .scaler .sval {
+    display: flex; flex-direction: column; justify-content: center;
+    align-items: center; min-width: 52px; line-height: 1.1;
+  }
+  .scaler .slab {
+    font-size: 8.5px; font-weight: 620; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .scaler .snum {
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-size: 15px; font-weight: 640; letter-spacing: -0.02em;
+  }
+
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
+
+<!-- TEMPORARY: scale probe. Tell Claude the value that looks right, then this comes out. -->
+<div class="scaler" id="scaler" role="group" aria-label="Interface scale (temporary)">
+  <button id="scaleDown" aria-label="Smaller">−</button>
+  <div class="sval">
+    <span class="slab">Scale</span>
+    <span class="snum" id="scaleVal">1.00</span>
+  </div>
+  <button id="scaleUp" aria-label="Bigger">+</button>
+  <button id="scaleReset" aria-label="Reset to 1.00" title="Reset">↺</button>
+</div>
 
 <div class="wrap">
   <header class="masthead">
@@ -815,7 +859,12 @@
   /* ---------- drag interactions ---------- */
   function attachPlotDrag(hit) {
     let dragging = false;
-    const apply = e => setPace(pOf(e.clientX - shell.getBoundingClientRect().left));
+    // .wrap may be zoomed, so convert viewport px back into the SVG's own units
+    const apply = e => {
+      const r = shell.getBoundingClientRect();
+      const z = W ? r.width / W : 1;
+      setPace(pOf((e.clientX - r.left) / (z || 1)));
+    };
 
     hit.addEventListener("pointerdown", e => {
       dragging = true;
@@ -960,5 +1009,23 @@
 
   window.matchMedia("(prefers-color-scheme: dark)")
     .addEventListener("change", () => { drawStatic(); paintCursor(); });
+
+  /* ---------- TEMPORARY: scale probe ---------- */
+  const SCALE_KEY = "pf-scale", scaleValEl = $("scaleVal");
+  let scale = 1;
+  function setScale(v) {
+    scale = Math.min(1.60, Math.max(0.70, Math.round(v * 20) / 20));
+    document.documentElement.style.setProperty("--k", scale);
+    scaleValEl.textContent = scale.toFixed(2);
+    try { localStorage.setItem(SCALE_KEY, String(scale)); } catch (_) {}
+    clearTimeout(rt);
+    rt = setTimeout(() => { drawStatic(); paintCursor(); }, 60);
+  }
+  $("scaleDown").addEventListener("click", () => setScale(scale - 0.05));
+  $("scaleUp").addEventListener("click", () => setScale(scale + 0.05));
+  $("scaleReset").addEventListener("click", () => setScale(1));
+  let saved = 1;
+  try { saved = parseFloat(localStorage.getItem(SCALE_KEY)) || 1; } catch (_) {}
+  setScale(saved);
 })();
 </script>
