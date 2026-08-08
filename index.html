@@ -335,6 +335,7 @@
       grid-template-rows: auto auto auto;
       grid-template-areas: "chart" "times" "dial";
       gap: 14px;
+      align-content: space-between;
     }
 
     #dial {
@@ -507,6 +508,7 @@
 
   /* ---------- build the tiles & legend ---------- */
   const tiles = $("tiles"), legend = $("legend"), distValEl = $("distVal");
+  const cols = document.querySelector(".cols"), wrap = document.querySelector(".wrap");
 
   DIST.forEach(d => {
     const tile = document.createElement("div");
@@ -962,47 +964,33 @@
 
   function shellZoom() { return (W ? shell.getBoundingClientRect().width / W : 1) || 1; }
 
-  /* On a phone the three cards fill the screen exactly: the plot holds a landscape
-     aspect, the grid of times stretches into the spare height, and its type grows
-     with the rows so they never read as empty. */
+  /* On a phone the three cards fill the screen exactly, with the plot absorbing
+     whatever height the grid of times and the dial do not need. */
   function fitAndDraw() {
-    tiles.style.height = "";
-    tiles.style.removeProperty("--rowh");
+    cols.style.height = "";
     fitH = 0;
     drawStatic();
     if (!narrow) { paintCursor(); return; }
 
-    const wrap = document.querySelector(".wrap");
     // documentElement.scrollHeight never reports below the viewport, so measure the
     // content itself; .wrap is zoomed on phones, so convert back to its own units.
     const slack = () =>
       (window.innerHeight - (wrap.getBoundingClientRect().bottom + window.scrollY)) / shellZoom();
 
-    const ROWS = Math.ceil(DIST.length / 2), ROW_MAX = 113, ASPECT_MIN = 1.15;
-
-    // 1. if the page overflows, the plot gives back first
+    // The grid of times keeps its natural size and the plot takes the rest, up to
+    // roughly square — past that it starts reading as a thin column.
+    const H_MAX = Math.round(W / 0.95);
     let s = slack();
-    for (let i = 0; i < 4 && s < -3; i++) {
-      const want = Math.max(210, Math.round(H + s));
+    for (let i = 0; i < 5; i++) {
+      if (Math.abs(s) <= 3) break;
+      const want = Math.max(210, Math.min(H_MAX, Math.round(H + s)));
       if (Math.abs(want - H) <= 2) break;
       fitH = want;
       drawStatic();
       s = slack();
     }
-    // 2. spare room goes to the grid of times, up to a comfortable row height
-    if (s > 4) {
-      const cap = ROW_MAX * ROWS + (ROWS - 1);
-      tiles.style.height = Math.min(cap, Math.round(tiles.offsetHeight + s)) + "px";
-      s = slack();
-    }
-    // 3. the plot takes anything still left, but never past landscape
-    if (s > 4) {
-      const want = Math.min(Math.round(W / ASPECT_MIN), Math.round(H + s));
-      if (want - H > 2) { fitH = want; drawStatic(); }
-    }
-    // rows this tall need type to match, or they read as empty
-    tiles.style.setProperty("--rowh",
-      Math.round((tiles.getBoundingClientRect().height / (shellZoom() || 1)) / ROWS) + "px");
+    // Anything the plot could not take spreads between the three cards.
+    if (s > 4) cols.style.height = Math.round(cols.offsetHeight + s) + "px";
     paintCursor();
   }
 
