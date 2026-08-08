@@ -16,8 +16,9 @@
     --hair:          rgba(12,17,22,0.10);
     --accent:        #2a78d6;
     --accent-soft:   rgba(42,120,214,0.12);
+    --row-now:       #e3edfb;
     --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a;
-    --s4: #eda100; --s5: #e87ba4; --s6: #008300;
+    --s4: #eda100; --s5: #e87ba4; --s6: #4a3aa7;
     --shadow: 0 1px 2px rgba(12,17,22,.05), 0 8px 24px -12px rgba(12,17,22,.18);
     --lift: 0 -1px 2px rgba(12,17,22,.04), 0 -10px 26px -14px rgba(12,17,22,.3);
 
@@ -38,8 +39,9 @@
       --hair:        rgba(255,255,255,0.12);
       --accent:      #3987e5;
       --accent-soft: rgba(57,135,229,0.18);
+      --row-now:     #1d2a39;
       --s1: #3987e5; --s2: #d95926; --s3: #199e70;
-      --s4: #c98500; --s5: #d55181; --s6: #008300;
+      --s4: #c98500; --s5: #d55181; --s6: #9085e9;
       --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
       --lift: 0 -1px 2px rgba(0,0,0,.5), 0 -10px 26px -14px rgba(0,0,0,.9);
     }
@@ -57,8 +59,9 @@
     --hair:        rgba(255,255,255,0.12);
     --accent:      #3987e5;
     --accent-soft: rgba(57,135,229,0.18);
+    --row-now:     #1d2a39;
     --s1: #3987e5; --s2: #d95926; --s3: #199e70;
-    --s4: #c98500; --s5: #d55181; --s6: #008300;
+    --s4: #c98500; --s5: #d55181; --s6: #9085e9;
     --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
     --lift: 0 -1px 2px rgba(0,0,0,.5), 0 -10px 26px -14px rgba(0,0,0,.9);
   }
@@ -98,10 +101,12 @@
     grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
     grid-template-areas: "dial chart" "times chart";
     align-content: start;
+    align-items: start;
   }
   #dial  { grid-area: dial; }
   #times { grid-area: times; }
   #chart { grid-area: chart; }
+  .cols > * { min-width: 0; }
 
   .card {
     background: var(--surface);
@@ -283,29 +288,43 @@
   details.table-view summary::-webkit-details-marker { display: none; }
   details.table-view summary::before { content: "▸"; margin-right: 7px; display: inline-block; }
   details.table-view[open] summary::before { content: "▾"; }
-  .tscroll { overflow-x: auto; max-height: 340px; overflow-y: auto; }
-  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .tscroll { overflow: auto; max-height: 320px; overscroll-behavior: contain; }
+  table {
+    border-collapse: separate; border-spacing: 0;
+    width: 100%; font-size: 13px;
+  }
   th, td {
     padding: 6px 10px; text-align: right; white-space: nowrap;
     font-family: var(--mono); font-variant-numeric: tabular-nums;
+    background: var(--cell-bg, var(--surface));
   }
   th {
-    position: sticky; top: 0; background: var(--surface);
+    position: sticky; top: 0; z-index: 2;
     font-family: var(--sans); font-size: 11px; font-weight: 620;
     letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
     border-bottom: 1px solid var(--axis);
   }
-  th:first-child, td:first-child { text-align: left; }
-  tbody tr + tr td { border-top: 1px solid var(--grid); }
-  tbody tr.now td { background: var(--accent-soft); font-weight: 600; }
+  td { border-bottom: 1px solid var(--grid); }
+  tbody tr:last-child td { border-bottom: 0; }
+  /* Pace and km/h stay put; the distance columns scroll under them. */
+  th:nth-child(1), td:nth-child(1) {
+    position: sticky; left: 0; z-index: 1; text-align: left;
+    width: 62px; min-width: 62px;
+  }
+  th:nth-child(2), td:nth-child(2) {
+    position: sticky; left: 62px; z-index: 1;
+    width: 58px; min-width: 58px;
+    box-shadow: 1px 0 0 var(--grid);
+  }
+  th:nth-child(1), th:nth-child(2) { z-index: 3; }
+  tbody tr.now td { --cell-bg: var(--row-now); font-weight: 600; }
 
   footer { font-size: 12px; color: var(--muted); text-align: center; }
 
   /* ================= mobile: chart on top, grid in the middle, dial pinned ================= */
   @media (max-width: 900px) {
-    body { font-size: 17px; }
     .wrap { padding: 16px 12px 24px; gap: 14px; }
-    .cols { grid-template-columns: 1fr; grid-template-areas: "chart" "times" "dial"; gap: 14px; }
+    .cols { grid-template-columns: minmax(0, 1fr); grid-template-areas: "chart" "times" "dial"; gap: 14px; }
 
     #dial {
       position: sticky; bottom: 12px; z-index: 5;
@@ -318,38 +337,26 @@
     .hint, .bezel, .pace-steps { display: none; }
     .dial-track { margin-top: 0; }
     .hero-read .eyebrow, .hero-alt .eyebrow, .hero-alt .mi { display: none; }
-    .hero-val { font-size: 40px; }
-    .hero-alt .v { font-size: 24px; }
+    .hero-val { font-size: 34px; }
+    .hero-alt .v { font-size: 21px; }
 
     .masthead .eyebrow { display: none; }
-    .wordmark { font-size: 16px; }
 
     #chart { padding: 13px 12px 6px; gap: 7px; }
-    .chart-title { font-size: 16.5px; }
-    .chart-sub { font-size: 12.5px; }
-    .legend { gap: 4px 13px; }
-    .legend-item { font-size: 12.5px; gap: 5px; }
     .lg-full { display: none; }
     .lg-short { display: inline; }
 
     .tile { padding: 10px 12px 11px; gap: 6px; }
-    .tile-head .dot { width: 9px; height: 9px; }
-    .tile-name { font-size: 13.5px; }
-    #dcu-km { font-size: 12px; }
-    .tile-val { font-size: 27px; }
+    .tile-val { font-size: 23px; }
     .tile-ctl { gap: 6px; }
-    .step { height: 40px; font-size: 21px; border-radius: 10px; }
+    .step { height: 36px; font-size: 19px; }
     .custom-row { padding: 10px 12px 11px; }
-    .custom-row .eyebrow { font-size: 11.5px; }
-    .dist-val { font-size: 23px; }
-    .custom-row .pace-steps { width: 100px; gap: 6px; }
-
-    details.table-view summary { font-size: 12.5px; padding: 10px 2px 9px; }
-    footer { font-size: 12.5px; }
+    .dist-val { font-size: 20px; }
+    .custom-row .pace-steps { width: 92px; gap: 6px; }
   }
   @media (max-width: 360px) {
-    .hero-val { font-size: 34px; }
-    .tile-val { font-size: 25px; }
+    .hero-val { font-size: 30px; }
+    .tile-val { font-size: 21px; }
   }
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
