@@ -613,7 +613,7 @@
   const SVGNS = "http://www.w3.org/2000/svg";
   const svg = $("plot"), shell = $("plotShell"), flabels = $("flabels");
   let PAD = { t: 20, r: 68, b: 46, l: 52 };
-  let narrow = false, fitH = 0, lastSlack = 0;
+  let narrow = false, fitH = 0;
   let W = 640, H = 400, dom = { lo: 600, hi: 30000 };
   const el = (n, a) => { const e = document.createElementNS(SVGNS, n); for (const k in a) e.setAttribute(k, a[k]); return e; };
 
@@ -1018,9 +1018,7 @@
     }
     // Anything the plot could not take spreads between the three cards.
     if (s > 4) cols.style.height = Math.round(cols.offsetHeight + s) + "px";
-    lastSlack = s;
     paintCursor();
-    dbg();
   }
 
   let rt = 0;
@@ -1046,54 +1044,6 @@
 
   /* A late webfont changes the tiles' natural height after the first fit. */
   document.fonts?.ready.then(() => refit(0));
-
-  /* ---------- ?debug: what this device actually measures ----------
-     The fit works from getBoundingClientRect against window.innerHeight while
-     .wrap is zoomed, and engines disagree about which units a rect is in. When
-     a phone shows a gap that a desktop engine cannot reproduce, this is the
-     panel that says why. Tap it to dismiss. */
-  var panel = null;   // var: fitAndDraw calls dbg() during boot, before this line runs
-  function dbg() {
-    if (!/(^|[?&])debug/.test(location.search)) return;
-    if (!panel) {
-      panel = document.createElement("div");
-      panel.style.cssText =
-        "position:fixed;left:6px;top:6px;z-index:99;max-width:calc(100% - 12px);" +
-        "padding:7px 9px;border-radius:8px;background:rgba(0,0,0,.82);color:#7CFC9B;" +
-        "font:11px/1.45 ui-monospace,Menlo,monospace;white-space:pre;pointer-events:auto;" +
-        "box-shadow:0 2px 12px rgba(0,0,0,.5)";
-      panel.addEventListener("click", () => panel.remove());
-      document.body.appendChild(panel);
-    }
-    const vv = window.visualViewport;
-    const wr = wrap.getBoundingClientRect();
-    // Does a rect come back in zoomed units on this engine? Chrome: ~0.75. If an
-    // engine reports layout units instead this is ~1.00, and the fit misconverts.
-    const rectRatio = wrap.offsetWidth ? wr.width / wrap.offsetWidth : 0;
-    const n = v => (Math.round(v * 10) / 10);
-    panel.textContent = [
-      "build   " + ($("build").textContent || "-"),
-      "inner   " + window.innerWidth + " x " + window.innerHeight,
-      "visual  " + (vv ? n(vv.width) + " x " + n(vv.height) + "  scale " + n(vv.scale) : "n/a"),
-      "docEl   " + document.documentElement.clientWidth + " x " + document.documentElement.clientHeight,
-      "dpr     " + window.devicePixelRatio,
-      "zoom    css " + (getComputedStyle(wrap).zoom || "-") + "   rect/offset " + n(rectRatio),
-      "regime  rects " + (zoomInfo().rectZoom === 1 ? "layout (WebKit)" : "scaled (Blink)"),
-      "wrap    top " + n(wr.top) + "  bot " + n(wr.bottom) + "  h " + n(wr.height),
-      "offsetH " + wrap.offsetHeight,
-      "painted " + n(wr.bottom * (zoomInfo().cssZoom / zoomInfo().rectZoom)),
-      "GAP     " + n(window.innerHeight - wr.bottom * (zoomInfo().cssZoom / zoomInfo().rectZoom)) +
-        "   slack " + n(lastSlack),
-      "scrollH " + document.documentElement.scrollHeight + "  scrollY " + n(window.scrollY),
-      "plot    " + svg.getAttribute("height") + "  narrow " + narrow,
-      "colsH   " + (cols.style.height || "auto"),
-    ].join("\n");
-  }
-  ["resize", "scroll", "orientationchange"].forEach(e =>
-    window.addEventListener(e, dbg, { passive: true }));
-  window.visualViewport?.addEventListener("resize", dbg);
-  window.visualViewport?.addEventListener("scroll", dbg);
-  dbg();
 
   window.matchMedia("(prefers-color-scheme: dark)")
     .addEventListener("change", fitAndDraw);
