@@ -195,32 +195,29 @@
   }
   .tile {
     background: var(--surface);
-    padding: 11px 13px 12px;
-    display: flex; flex-direction: column; gap: 7px;
+    padding: 9px 12px 10px;
+    display: flex; align-items: baseline; gap: 7px;
+    cursor: ew-resize; touch-action: pan-y;
+    user-select: none; -webkit-user-select: none;
   }
-  .tile-head { display: flex; align-items: center; gap: 6px; min-width: 0; }
-  .tile-head .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--key); flex: none; }
+  .tile:hover { background: var(--surface-2); }
+  .tile.scrub { background: var(--accent-soft); }
+  .tile:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .tile .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--key); flex: none; align-self: center;
+  }
   .tile-name {
     font-size: 12.5px; font-weight: 640; color: var(--ink-2);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
   }
   /* The fixed distances name their own length; only the custom tile needs a chip. */
   .tile-km { display: none; }
-  #dcu-km {
-    display: inline; font-family: var(--mono); font-variant-numeric: tabular-nums;
-    font-size: 11px; color: var(--muted); margin-left: auto; white-space: nowrap;
-  }
-  .tile-name { flex: 0 1 auto; min-width: 0; }
   .tile-val {
+    margin-left: auto;
     font-family: var(--mono); font-variant-numeric: tabular-nums;
-    font-size: 25px; font-weight: 620; letter-spacing: -0.035em;
-    cursor: ew-resize; touch-action: pan-y; user-select: none; -webkit-user-select: none;
-    padding: 1px 4px; margin: -1px -4px; border-radius: 7px; white-space: nowrap;
+    font-size: 17px; font-weight: 620; letter-spacing: -0.03em; white-space: nowrap;
   }
-  .tile-val:hover { background: var(--surface-2); }
-  .tile-val.scrub { background: var(--accent-soft); }
-  .tile-val:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-  .tile-ctl { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 
   .step {
     height: 38px; flex: none;
@@ -335,29 +332,49 @@
       gap: 2px 12px;
       box-shadow: var(--shadow), var(--lift);
     }
-    .hint, .bezel, .pace-steps { display: none; }
+    .hint, .bezel, #dial .pace-steps { display: none; }
     .dial-track { margin-top: 0; }
     .hero-read .eyebrow, .hero-alt .eyebrow, .hero-alt .mi { display: none; }
     .hero-val { font-size: 34px; }
     .hero-alt .v { font-size: 21px; }
 
-    .masthead .eyebrow { display: none; }
+    .masthead, footer { display: none; }
+    .flabel { padding: 1.5px 6px 1.5px 5px; border-radius: 6px; }
+    .flabel .t { font-size: 11.5px; }
+    .flabel .n { font-size: 9.5px; }
 
     #chart { padding: 13px 12px 6px; gap: 7px; }
     .lg-full { display: none; }
     .lg-short { display: inline; }
 
-    .tile { padding: 10px 12px 11px; gap: 6px; }
-    .tile-val { font-size: 23px; }
-    .tile-ctl { gap: 6px; }
-    .step { height: 36px; font-size: 19px; }
-    .custom-row { padding: 10px 12px 11px; }
-    .dist-val { font-size: 20px; }
-    .custom-row .pace-steps { width: 92px; gap: 6px; }
+    .tile { padding: 9px 11px 10px; gap: 6px; }
+    .tile-name { font-size: 12px; }
+    .tile-val { font-size: 17px; }
+    .step { height: 34px; font-size: 18px; }
+    .custom-row { padding: 8px 11px 9px; }
+    .dist-val { font-size: 17px; }
+    .custom-row .pace-steps { width: 84px; gap: 6px; }
+    footer { font-size: 11px; }
+  }
+  /* Short screens (SE-class): trade the chart's subtitle and some air for the fit. */
+  @media (max-width: 900px) and (max-height: 720px) {
+    .wrap { padding: 12px 12px 18px; }
+    .cols { gap: 10px; }
+    #chart { padding: 11px 12px 5px; gap: 6px; }
+    .chart-sub { display: none; }
+    .tile { padding: 8px 11px 9px; }
+    details.table-view summary { padding: 9px 2px 8px; }
+  }
+  /* Narrow phones: shrink the row rather than truncate a distance name. */
+  @media (max-width: 400px) {
+    .tile { padding: 9px 10px 10px; gap: 5px; }
+    .tile-name { font-size: 11.5px; }
+    .tile-val { font-size: 16px; }
   }
   @media (max-width: 360px) {
     .hero-val { font-size: 30px; }
-    .tile-val { font-size: 21px; }
+    .tile-name { font-size: 11px; }
+    .tile-val { font-size: 15px; }
   }
 
   /* TEMPORARY — scale probe. Remove once a value is picked. */
@@ -474,7 +491,7 @@
                aria-label="Pace in seconds per kilometre">
       </div>
 
-      <div class="hint">Drag the dial, a finish time, or the chart.</div>
+      <div class="hint">Drag the dial, a distance row, or the chart.</div>
       <div class="pace-steps">
         <button class="step" data-pace-step="1" aria-label="One second per km slower">−</button>
         <button class="step" data-pace-step="-1" aria-label="One second per km faster">+</button>
@@ -493,12 +510,12 @@
   const KM_PER_MI = 1.609344;
 
   const DIST = [
-    { id: "d5",  name: "5K",            short: "5K",  km: 5,       slot: 1, step: 5  },
-    { id: "d10", name: "10K",           short: "10K", km: 10,      slot: 2, step: 10 },
-    { id: "d15", name: "15K",           short: "15K", km: 15,      slot: 3, step: 15 },
-    { id: "dhm", name: "Half marathon", short: "HM",  km: 21.0975, slot: 4, step: 15 },
-    { id: "dfm", name: "Marathon",      short: "M",   km: 42.195,  slot: 5, step: 30 },
-    { id: "dcu", name: "Custom",        short: "30K", km: 30,      slot: 6, step: 30, custom: true },
+    { id: "d5",  name: "5K",            tile: "5K",       short: "5K",  km: 5,       slot: 1, step: 5  },
+    { id: "d10", name: "10K",           tile: "10K",      short: "10K", km: 10,      slot: 2, step: 10 },
+    { id: "d15", name: "15K",           tile: "15K",      short: "15K", km: 15,      slot: 3, step: 15 },
+    { id: "dhm", name: "Half marathon", tile: "Half",     short: "HM",  km: 21.0975, slot: 4, step: 15 },
+    { id: "dfm", name: "Marathon",      tile: "Marathon", short: "M",   km: 42.195,  slot: 5, step: 30 },
+    { id: "dcu", name: "Custom",        tile: "Custom",   short: "30K", km: 30,      slot: 6, step: 30, custom: true },
   ];
 
   const state = { pace: 300, custom: 30 };
@@ -530,35 +547,18 @@
   DIST.forEach(d => {
     const tile = document.createElement("div");
     tile.className = "tile";
+    tile.id = d.id + "-tile";
+    tile.tabIndex = 0;
+    tile.setAttribute("role", "slider");
+    tile.setAttribute("aria-label", d.name + " finish time");
     tile.style.setProperty("--key", `var(--s${d.slot})`);
 
-    const head = document.createElement("div");
-    head.className = "tile-head";
     const dot = document.createElement("span"); dot.className = "dot";
-    const nm = document.createElement("span"); nm.className = "tile-name"; nm.textContent = d.name;
+    const nm = document.createElement("span"); nm.className = "tile-name"; nm.textContent = d.tile;
     const km = document.createElement("span"); km.className = "tile-km"; km.id = d.id + "-km";
-    head.append(dot, nm, km);
+    const val = document.createElement("span"); val.className = "tile-val"; val.id = d.id + "-val";
 
-    const val = document.createElement("div");
-    val.className = "tile-val";
-    val.id = d.id + "-val";
-    val.tabIndex = 0;
-    val.setAttribute("role", "slider");
-    val.setAttribute("aria-label", d.name + " finish time");
-
-    const ctl = document.createElement("div");
-    ctl.className = "tile-ctl";
-    for (const [sign, label] of [[1, "−"], [-1, "+"]]) {
-      const b = document.createElement("button");
-      b.className = "step";
-      b.textContent = label;
-      b.dataset.dist = d.id;
-      b.dataset.timeStep = String(sign * d.step);
-      b.setAttribute("aria-label", (sign > 0 ? "Slower: " : "Faster: ") + d.name);
-      ctl.append(b);
-    }
-
-    tile.append(head, val, ctl);
+    tile.append(dot, nm, km, val);
     tiles.append(tile);
 
     const li = document.createElement("div");
@@ -603,7 +603,7 @@
       const t = state.pace * d.km;
       $(d.id + "-val").textContent = fmtTime(t);
       $(d.id + "-km").textContent = fmtKm(d.km) + " km";
-      $(d.id + "-val").setAttribute("aria-valuetext",
+      $(d.id + "-tile").setAttribute("aria-valuetext",
         fmtTime(t) + " at " + fmtPace(state.pace) + " per kilometre");
     });
     distValEl.textContent = state.custom.toFixed(1) + " km";
@@ -624,12 +624,8 @@
     d.step = Math.max(2, Math.round(state.custom));
     $("dcu-lgf").textContent = "Custom · " + fmtKm(state.custom) + " km";
     $("dcu-lgs").textContent = d.short;
-    document.querySelectorAll('[data-dist="dcu"][data-time-step]').forEach(b => {
-      b.dataset.timeStep = String(Math.sign(Number(b.dataset.timeStep)) * d.step);
-    });
     renderReadouts();
-    drawStatic();
-    moveCursor();
+    fitAndDraw();
     buildTable();
   }
 
@@ -637,7 +633,7 @@
   const SVGNS = "http://www.w3.org/2000/svg";
   const svg = $("plot"), shell = $("plotShell"), flabels = $("flabels");
   let PAD = { t: 20, r: 68, b: 46, l: 52 };
-  let narrow = false;
+  let narrow = false, fitH = 0;
   let W = 640, H = 400, dom = { lo: 600, hi: 30000 };
   const el = (n, a) => { const e = document.createElementNS(SVGNS, n); for (const k in a) e.setAttribute(k, a[k]); return e; };
 
@@ -660,7 +656,7 @@
     narrow = window.innerWidth <= 900;
     PAD = narrow ? { t: 16, r: 52, b: 46, l: 46 } : { t: 20, r: 68, b: 46, l: 52 };
     H = narrow
-      ? Math.max(268, Math.min(380, Math.round(W * 0.80)))
+      ? (fitH || Math.max(210, Math.min(400, Math.round(W * 0.80))))
       : Math.max(400, Math.min(580, Math.round(W * 0.64)));
     svg.setAttribute("width", W);
     svg.setAttribute("height", H);
@@ -842,7 +838,9 @@
       labels[i].n.textContent = d.short;
       return { i, y };
     });
-    spread(items, narrow ? 24 : 27, PAD.t + 12, H - PAD.b - 12);
+    const band = H - PAD.t - PAD.b - 24;
+    const gap = narrow ? Math.max(21, Math.min(24, band / DIST.length)) : 27;
+    spread(items, gap, PAD.t + 12, H - PAD.b - 12);
 
     const flip = x > W - PAD.r - (narrow ? 100 : 120);
     const off = narrow ? 11 : 14;
@@ -910,7 +908,7 @@
   }
 
   DIST.forEach(d => {
-    const node = $(d.id + "-val");
+    const node = $(d.id + "-tile");
     scrubbable(node, () => state.pace * d.km, t => setPace(t / d.km), d.step / 8);
     node.addEventListener("keydown", e => {
       const s = (e.shiftKey ? 4 : 1) * d.step;
@@ -943,12 +941,9 @@
     if (btn.dataset.paceStep) {
       const s = Number(btn.dataset.paceStep);
       fn = () => setPace(state.pace + s);
-    } else if (btn.dataset.distStep) {
+    } else {
       const s = Number(btn.dataset.distStep);
       fn = () => setCustom(state.custom + s);
-    } else {
-      const d = DIST.find(x => x.id === btn.dataset.dist);
-      fn = () => setPace(state.pace + Number(btn.dataset.timeStep) / d.km);
     }
     btn.addEventListener("pointerdown", e => { e.preventDefault(); startHold(fn); });
     btn.addEventListener("click", e => e.preventDefault());
@@ -1001,25 +996,44 @@
   setCustom(30);
   setPace(300);
 
+  /* On a phone, grow or shrink the plot until the page stops scrolling. */
+  function fitAndDraw() {
+    fitH = 0;
+    drawStatic();
+    if (narrow) {
+      for (let i = 0; i < 4; i++) {
+        const r = shell.getBoundingClientRect();
+        const z = W ? r.width / W : 1;                    // .wrap may be zoomed
+        const slack = (window.innerHeight - document.documentElement.scrollHeight) / (z || 1);
+        const want = Math.max(210, Math.min(400, Math.round(H + slack)));
+        if (Math.abs(want - H) <= 2) break;
+        fitH = want;
+        drawStatic();
+      }
+    }
+    paintCursor();
+  }
+
   let rt = 0;
   new ResizeObserver(() => {
     clearTimeout(rt);
-    rt = setTimeout(() => { drawStatic(); paintCursor(); }, 60);
+    rt = setTimeout(fitAndDraw, 60);
   }).observe(shell);
+  window.addEventListener("orientationchange", () => setTimeout(fitAndDraw, 120));
 
   window.matchMedia("(prefers-color-scheme: dark)")
-    .addEventListener("change", () => { drawStatic(); paintCursor(); });
+    .addEventListener("change", fitAndDraw);
 
   /* ---------- TEMPORARY: scale probe ---------- */
   const SCALE_KEY = "pf-scale", scaleValEl = $("scaleVal");
   let scale = 1;
   function setScale(v) {
-    scale = Math.min(1.60, Math.max(0.70, Math.round(v * 20) / 20));
+    scale = Math.min(1.40, Math.max(0.55, Math.round(v * 20) / 20));
     document.documentElement.style.setProperty("--k", scale);
     scaleValEl.textContent = scale.toFixed(2);
     try { localStorage.setItem(SCALE_KEY, String(scale)); } catch (_) {}
     clearTimeout(rt);
-    rt = setTimeout(() => { drawStatic(); paintCursor(); }, 60);
+    rt = setTimeout(fitAndDraw, 60);
   }
   $("scaleDown").addEventListener("click", () => setScale(scale - 0.05));
   $("scaleUp").addEventListener("click", () => setScale(scale + 0.05));
