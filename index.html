@@ -396,6 +396,51 @@
   }
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+  /* ---------- TEMPORARY: swipe-feel tuning panel (?expo) ---------- */
+  #expoPanel {
+    position: fixed; top: 6px; left: 6px; z-index: 50; width: 178px;
+    background: var(--surface); border: 1px solid var(--axis); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 6px 8px 7px;
+    font-family: var(--sans); font-size: 10px; line-height: 1.35; color: var(--ink-2);
+  }
+  #expoPanel[hidden] { display: none; }
+  #expoPanel h4 {
+    margin: 0; font-size: 9.5px; font-weight: 640; color: var(--ink);
+    letter-spacing: .08em; text-transform: uppercase;
+    display: flex; align-items: center; gap: 6px;
+  }
+  #expoPanel h4 button {
+    margin-left: auto; border: 0; background: none; color: var(--muted);
+    font: inherit; font-size: 13px; line-height: 1; cursor: pointer; padding: 0 2px;
+  }
+  #expoPanel.min .ex-body { display: none; }
+  .ex-body { display: grid; gap: 3px; margin-top: 6px; }
+  .ex-row { display: grid; grid-template-columns: 48px 1fr 28px; align-items: center; gap: 5px; }
+  .ex-row input[type=range] { height: 16px; }
+  .ex-row input[type=range]::-webkit-slider-runnable-track { height: 3px; }
+  .ex-row input[type=range]::-webkit-slider-thumb { width: 13px; height: 13px; border-width: 2px; margin-top: -5.5px; }
+  .ex-row input[type=range]::-moz-range-thumb { width: 11px; height: 11px; border-width: 2px; }
+  .ex-row i {
+    font-family: var(--mono); font-style: normal; font-size: 9.5px;
+    text-align: right; color: var(--ink);
+  }
+  .ex-toggle {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 10.5px; font-weight: 620; color: var(--ink);
+  }
+  .ex-toggle input { width: 13px; height: 13px; margin: 0; accent-color: var(--accent); }
+  .ex-meter {
+    font-family: var(--mono); font-size: 9.5px; color: var(--muted);
+    border-top: 1px solid var(--grid); margin-top: 4px; padding-top: 4px;
+  }
+  .ex-meter b { color: var(--accent); font-weight: 620; }
+  .ex-note { color: var(--muted); font-size: 9px; line-height: 1.3; }
+  .ex-note button {
+    font: inherit; font-size: 9px; color: var(--ink-2); cursor: pointer;
+    background: var(--surface-2); border: 1px solid var(--hair);
+    border-radius: 5px; padding: 1px 6px; margin-left: 2px;
+  }
 </style>
 
 <div class="wrap">
@@ -473,6 +518,22 @@
   <footer>Half marathon 21.0975 km · marathon 42.195 km. Times assume an even split.</footer>
 </div>
 
+<!-- TEMPORARY: swipe-feel tuning, shown only for ?expo. Delete with the TUNE block. -->
+<aside id="expoPanel" hidden>
+  <h4>Swipe feel <button type="button" id="exMin" aria-label="collapse">–</button></h4>
+  <div class="ex-body">
+    <label class="ex-toggle"><input type="checkbox" id="exOn"> Expo acceleration</label>
+    <div class="ex-row"><span>px / step</span><input type="range" id="exPx"    min="3"   max="24"   step="1"><i id="exPxV"></i></div>
+    <div class="ex-row"><span>start px/s</span><input type="range" id="exV0"   min="50"  max="900"  step="10"><i id="exV0V"></i></div>
+    <div class="ex-row"><span>full px/s</span><input type="range" id="exV1"    min="600" max="4000" step="50"><i id="exV1V"></i></div>
+    <div class="ex-row"><span>max gain</span><input type="range" id="exGmax"   min="1"   max="14"   step="0.5"><i id="exGV"></i></div>
+    <div class="ex-row"><span>curve</span><input type="range" id="exCurve"     min="0.6" max="3"    step="0.1"><i id="exCV"></i></div>
+    <div class="ex-row"><span>smoothing</span><input type="range" id="exEase"  min="0.05" max="1"   step="0.05"><i id="exEV"></i></div>
+    <div class="ex-meter">v <b id="exSpd">0</b> px/s · gain <b id="exG">1.0</b>× · peak <b id="exPk">1.0</b>×</div>
+    <div class="ex-note">Off = plain linear scrub, for A/B. Settings persist; “reset” restores the defaults. <button type="button" id="exReset">reset</button></div>
+  </div>
+</aside>
+
 <script>
 (() => {
   "use strict";
@@ -480,13 +541,20 @@
   const PMIN = 150, PMAX = 600;          // pace bounds, seconds per km
   const KM_PER_MI = 1.609344;
 
+  /* Each field lands on its own grid of finish times: the longer the distance, the
+     coarser the useful step. A round marathon time therefore sits between the 10K's
+     snap points and vice versa — that is fine, the pace itself is kept fractional so
+     whichever field you are holding stays exactly on its own grid. */
+  const snapFor = km =>
+    km < 7.5 ? 5 : km < 12.5 ? 10 : km < 17.5 ? 15 : km < 32.5 ? 30 : 60;
+
   const DIST = [
-    { id: "d5",  name: "5K",            tile: "5K",       short: "5K",  km: 5,       slot: 1, step: 5  },
-    { id: "d10", name: "10K",           tile: "10K",      short: "10K", km: 10,      slot: 2, step: 10 },
-    { id: "d15", name: "15K",           tile: "15K",      short: "15K", km: 15,      slot: 3, step: 15 },
-    { id: "dhm", name: "Half marathon", tile: "Half",     short: "HM",  km: 21.0975, slot: 4, step: 15 },
-    { id: "dfm", name: "Marathon",      tile: "Marathon", short: "M",   km: 42.195,  slot: 5, step: 30 },
-    { id: "dcu", name: "Custom",        tile: "Custom",   short: "30K", km: 30,      slot: 6, step: 30, custom: true },
+    { id: "d5",  name: "5K",            tile: "5K",       short: "5K",  km: 5,       slot: 1, snap: 5  },
+    { id: "d10", name: "10K",           tile: "10K",      short: "10K", km: 10,      slot: 2, snap: 10 },
+    { id: "d15", name: "15K",           tile: "15K",      short: "15K", km: 15,      slot: 3, snap: 15 },
+    { id: "dhm", name: "Half marathon", tile: "Half",     short: "HM",  km: 21.0975, slot: 4, snap: 30 },
+    { id: "dfm", name: "Marathon",      tile: "Marathon", short: "M",   km: 42.195,  slot: 5, snap: 60 },
+    { id: "dcu", name: "Custom",        tile: "Custom",   short: "30K", km: 30,      slot: 6, snap: 30, custom: true },
   ];
 
   const state = { pace: 300, custom: 30 };
@@ -509,7 +577,10 @@
   }
   const fmtKm = k => (k < 10 ? k.toFixed(2) : k.toFixed(1)).replace(/\.?0+$/, m => m.includes(".") ? "" : m);
 
-  const clampPace = p => Math.round(Math.min(PMAX, Math.max(PMIN, p)));
+  /* The pace is kept fractional. Rounding it to whole seconds here would drag every
+     snapped finish time a second or two off its grid on the way back out. */
+  const clampPace = p => Math.min(PMAX, Math.max(PMIN, p));
+  const snapTo = (v, q) => Math.round(v / q) * q;
   const $ = id => document.getElementById(id);
 
   /* ---------- build the tiles & legend ---------- */
@@ -572,7 +643,7 @@
     kmhEl.textContent = (3600 / state.pace).toFixed(1);
     miEl.textContent = fmtPace(state.pace * KM_PER_MI) + " /mi";
     mphEl.textContent = (3600 / state.pace / KM_PER_MI).toFixed(1) + " mph";
-    slider.value = String(state.pace);
+    slider.value = String(Math.round(state.pace));
 
     DIST.forEach(d => {
       const t = state.pace * d.km;
@@ -596,7 +667,7 @@
     const d = DIST.find(x => x.custom);
     d.km = state.custom;
     d.short = fmtKm(state.custom) + "K";
-    d.step = Math.max(2, Math.round(state.custom));
+    d.snap = snapFor(state.custom);
     $("dcu-lgf").textContent = "Custom · " + fmtKm(state.custom) + " km";
     $("dcu-lgs").textContent = d.short;
     const nm = $("dcu-name");
@@ -859,21 +930,69 @@
     hit.addEventListener("pointercancel", end);
     hit.addEventListener("keydown", e => {
       const big = e.shiftKey ? 10 : 1;
-      if (e.key === "ArrowRight" || e.key === "ArrowUp") { setPace(state.pace + big); e.preventDefault(); }
-      if (e.key === "ArrowLeft" || e.key === "ArrowDown") { setPace(state.pace - big); e.preventDefault(); }
+      const p = Math.round(state.pace);
+      if (e.key === "ArrowRight" || e.key === "ArrowUp") { setPace(p + big); e.preventDefault(); }
+      if (e.key === "ArrowLeft" || e.key === "ArrowDown") { setPace(p - big); e.preventDefault(); }
     });
   }
 
-  // horizontal scrub on any numeric readout
-  function scrubbable(node, get, set, perPx) {
-    let active = false, x0 = 0, v0 = 0;
+  /* ---------- swipe feel ----------
+     TEMPORARY: the expo mode and its panel exist to find values that feel right.
+     Open the page with ?expo to get the tuning panel; the mode is off by default,
+     so a plain load is the normal, linear scrub. */
+  const TUNE_DEFAULTS = {
+    on: false,   // velocity gain off → one snap step per `px` pixels, always
+    px: 8,       // pixels of travel per snap step at gain 1
+    v0: 260,     // px/s where the gain starts to lift off 1
+    v1: 2200,    // px/s where it reaches gmax
+    gmax: 6,     // top multiplier
+    curve: 1.6,  // >1 keeps the low end docile and saves the punch for real flicks
+    ease: 0.3,   // EMA on the speed estimate; lower is smoother but laggier
+  };
+  const TUNE = Object.assign({}, TUNE_DEFAULTS);
+  try { Object.assign(TUNE, JSON.parse(localStorage.getItem("paceSwipeTune") || "{}")); } catch (_) {}
+
+  let onGain = null;   // the panel hooks in here to show live speed/gain
+
+  function gainOf(sp) {
+    if (!TUNE.on) return 1;
+    const f = Math.min(1, Math.max(0, (sp - TUNE.v0) / Math.max(1, TUNE.v1 - TUNE.v0)));
+    return 1 + (TUNE.gmax - 1) * Math.pow(f, TUNE.curve);
+  }
+
+  /* Horizontal scrub on any numeric readout, landing on the field's own grid.
+     The value is accumulated per move rather than taken from the total travel, so a
+     per-move gain can vary during one swipe without the value jumping when it does. */
+  function scrubbable(node, opts) {
+    let active = false, acc = 0, xp = 0, tp = 0, sp = 0, snap = 1, lo = -Infinity, hi = Infinity;
+
     node.addEventListener("pointerdown", e => {
-      active = true; x0 = e.clientX; v0 = get();
+      active = true;
+      acc = opts.get();
+      [lo, hi] = opts.range();
+      snap = opts.snap();
+      xp = e.clientX; tp = e.timeStamp || performance.now(); sp = 0;
+      onGain && onGain(0, 1, true);
       node.setPointerCapture(e.pointerId);
       node.classList.add("scrub");
       e.preventDefault();
     });
-    node.addEventListener("pointermove", e => { if (active) set(v0 + (e.clientX - x0) * perPx); });
+
+    node.addEventListener("pointermove", e => {
+      if (!active) return;
+      const now = e.timeStamp || performance.now();
+      const dx = e.clientX - xp, dt = Math.max(1, now - tp);
+      xp = e.clientX; tp = now;
+
+      sp += (Math.abs(dx) / dt * 1000 - sp) * TUNE.ease;
+      const g = gainOf(sp);
+      onGain && onGain(sp, g, false);
+
+      const perPx = snap / Math.max(1, TUNE.px * (opts.pxScale || 1));
+      acc = Math.min(hi, Math.max(lo, acc + dx * perPx * g));
+      opts.set(snapTo(acc, snap));
+    });
+
     const end = e => {
       if (!active) return;
       active = false;
@@ -886,23 +1005,36 @@
 
   DIST.forEach(d => {
     const node = $(d.id + "-tile");
-    scrubbable(node, () => state.pace * d.km, t => setPace(t / d.km), d.step / 8);
+    scrubbable(node, {
+      get:   () => state.pace * d.km,
+      set:   t => setPace(t / d.km),
+      snap:  () => d.snap,
+      range: () => [PMIN * d.km, PMAX * d.km],
+    });
+    // Arrows step on the same grid, from wherever another field happened to leave us.
     node.addEventListener("keydown", e => {
-      const s = (e.shiftKey ? 4 : 1) * d.step;
-      if (e.key === "ArrowRight" || e.key === "ArrowUp") { setPace((state.pace * d.km - s) / d.km); e.preventDefault(); }
-      if (e.key === "ArrowLeft" || e.key === "ArrowDown") { setPace((state.pace * d.km + s) / d.km); e.preventDefault(); }
+      const s = (e.shiftKey ? 4 : 1) * d.snap;
+      const t = state.pace * d.km;
+      if (e.key === "ArrowRight" || e.key === "ArrowUp") { setPace(snapTo(t - s, d.snap) / d.km); e.preventDefault(); }
+      if (e.key === "ArrowLeft" || e.key === "ArrowDown") { setPace(snapTo(t + s, d.snap) / d.km); e.preventDefault(); }
     });
   });
 
   const customRow = document.querySelector(".custom-row");
-  scrubbable(customRow, () => state.custom, setCustom, 0.05);
+  scrubbable(customRow, {
+    get:   () => state.custom,
+    set:   setCustom,
+    snap:  () => 0.1,
+    range: () => [0.4, 100],
+    pxScale: 0.25,          // 2px per 0.1 km — the distance wants a longer reach
+  });
   distValEl.addEventListener("keydown", e => {
     const s = e.shiftKey ? 1 : 0.1;
     if (e.key === "ArrowRight" || e.key === "ArrowUp") { setCustom(state.custom + s); e.preventDefault(); }
     if (e.key === "ArrowLeft" || e.key === "ArrowDown") { setCustom(state.custom - s); e.preventDefault(); }
   });
 
-  slider.addEventListener("input", () => setPace(Number(slider.value)));
+  slider.addEventListener("input", () => setPace(Math.round(Number(slider.value))));
 
   // steppers, with press-and-hold repeat
   let holdT = 0, holdI = 0;
@@ -916,7 +1048,7 @@
 
   document.querySelectorAll(".step").forEach(btn => {
     const s = Number(btn.dataset.paceStep);
-    const fn = () => setPace(state.pace + s);
+    const fn = () => setPace(Math.round(state.pace) + s);   // back onto whole seconds first
     btn.addEventListener("pointerdown", e => { e.preventDefault(); startHold(fn); });
     btn.addEventListener("click", e => e.preventDefault());
     btn.addEventListener("keydown", e => {
@@ -971,6 +1103,57 @@
     const p2 = n => String(n).padStart(2, "0");
     $("build").textContent = isNaN(d) ? "" :
       `[${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}]`;
+  }
+
+  /* TEMPORARY: the tuning panel. Only ?expo (or #expo) brings it up, so a normal
+     load never pays for it. Remove this block together with the TUNE block. */
+  if (/(^|[?&#])expo\b/.test(location.search + location.hash)) {
+    const panel = $("expoPanel");
+    panel.hidden = false;
+
+    const FIELDS = [
+      ["exPx",    "px",    v => String(v)],
+      ["exV0",    "v0",    v => String(v)],
+      ["exV1",    "v1",    v => String(v)],
+      ["exGmax",  "gmax",  v => v.toFixed(1) + "×"],
+      ["exCurve", "curve", v => v.toFixed(1)],
+      ["exEase",  "ease",  v => v.toFixed(2)],
+    ];
+    const OUT = { exPx: "exPxV", exV0: "exV0V", exV1: "exV1V",
+                  exGmax: "exGV", exCurve: "exCV", exEase: "exEV" };
+    const save = () => { try { localStorage.setItem("paceSwipeTune", JSON.stringify(TUNE)); } catch (_) {} };
+
+    function sync() {
+      $("exOn").checked = TUNE.on;
+      FIELDS.forEach(([id, key, fmt]) => {
+        $(id).value = String(TUNE[key]);
+        $(OUT[id]).textContent = fmt(TUNE[key]);
+      });
+    }
+    FIELDS.forEach(([id, key, fmt]) => {
+      $(id).addEventListener("input", () => {
+        TUNE[key] = Number($(id).value);
+        $(OUT[id]).textContent = fmt(TUNE[key]);
+        save();
+      });
+    });
+    $("exOn").addEventListener("change", () => { TUNE.on = $("exOn").checked; save(); });
+    $("exReset").addEventListener("click", () => { Object.assign(TUNE, TUNE_DEFAULTS); save(); sync(); });
+    $("exMin").addEventListener("click", () => {
+      const min = panel.classList.toggle("min");
+      $("exMin").textContent = min ? "+" : "–";
+    });
+    sync();
+
+    // Live speed and gain, so a swipe that felt wrong can be read off afterwards.
+    const spdEl = $("exSpd"), gEl = $("exG"), pkEl = $("exPk");
+    let peak = 1;
+    onGain = (sp, g, start) => {
+      if (start) { peak = 1; pkEl.textContent = "1.0"; }
+      if (g > peak) { peak = g; pkEl.textContent = peak.toFixed(1); }
+      spdEl.textContent = String(Math.round(sp));
+      gEl.textContent = g.toFixed(1);
+    };
   }
 
   setCustom(30);
