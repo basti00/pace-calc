@@ -194,13 +194,14 @@
   .tiles {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
     gap: 1px;
     background: var(--grid);
   }
   .tile {
     background: var(--surface);
     padding: 9px 12px 10px;
-    display: flex; align-items: baseline; gap: 7px;
+    display: flex; align-items: center; gap: 7px;
     cursor: ew-resize; touch-action: pan-y;
     user-select: none; -webkit-user-select: none;
   }
@@ -211,9 +212,10 @@
     width: 8px; height: 8px; border-radius: 50%;
     background: var(--key); flex: none; align-self: center;
   }
-  .tile-name .qual { font-style: normal; font-weight: 500; color: var(--muted); font-size: .88em; }
+  .tile-name .qual { font-style: normal; font-weight: 500; color: var(--muted); }
   .tile-name {
-    font-size: 12.5px; font-weight: 640; color: var(--ink-2);
+    font-size: clamp(12.5px, calc(var(--rowh, 52px) * 0.155), 15px);
+    font-weight: 640; color: var(--ink-2);
     white-space: nowrap; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
   }
   /* The fixed distances name their own length; only the custom tile needs a chip. */
@@ -221,7 +223,8 @@
   .tile-val {
     margin-left: auto;
     font-family: var(--mono); font-variant-numeric: tabular-nums;
-    font-size: 17px; font-weight: 620; letter-spacing: -0.03em; white-space: nowrap;
+    font-size: clamp(17px, calc(var(--rowh, 52px) * 0.26), 25px);
+    font-weight: 620; letter-spacing: -0.03em; white-space: nowrap;
   }
 
   .step {
@@ -359,8 +362,8 @@
     .lg-short { display: inline; }
 
     .tile { padding: 9px 11px 10px; gap: 6px; }
-    .tile-name { font-size: 12px; }
-    .tile-val { font-size: 17px; }
+    .tile .dot { width: clamp(8px, calc(var(--rowh, 52px) * 0.09), 11px);
+                 height: clamp(8px, calc(var(--rowh, 52px) * 0.09), 11px); }
     .step { height: 34px; font-size: 18px; }
     .custom-row { padding: 9px 11px 10px; }
     footer { font-size: 11px; }
@@ -377,13 +380,13 @@
   /* Narrow phones: shrink the row rather than truncate a distance name. */
   @media (max-width: 400px) {
     .tile { padding: 9px 10px 10px; gap: 5px; }
-    .tile-name { font-size: 11.5px; }
-    .tile-val { font-size: 16px; }
+    .tile-name { font-size: clamp(11.5px, calc(var(--rowh, 52px) * 0.15), 14px); }
+    .tile-val { font-size: clamp(16px, calc(var(--rowh, 52px) * 0.25), 23px); }
   }
   @media (max-width: 360px) {
     .hero-val { font-size: 30px; }
-    .tile-name { font-size: 11px; }
-    .tile-val { font-size: 15px; }
+    .tile-name { font-size: clamp(11px, calc(var(--rowh, 52px) * 0.14), 13px); }
+    .tile-val { font-size: clamp(15px, calc(var(--rowh, 52px) * 0.24), 21px); }
   }
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
@@ -589,9 +592,10 @@
     $("dcu-lgf").textContent = "Custom · " + fmtKm(state.custom) + " km";
     $("dcu-lgs").textContent = d.short;
     const nm = $("dcu-name");
-    nm.textContent = fmtKm(state.custom) + "K ";
-    nm.append(Object.assign(document.createElement("i"),
-      { className: "qual", textContent: "(custom)" }));
+    nm.textContent = "";
+    nm.append(
+      Object.assign(document.createElement("i"), { className: "qual", textContent: "custom:" }),
+      " " + fmtKm(state.custom) + "K");
     renderReadouts();
     fitAndDraw();
     buildTable();
@@ -623,7 +627,7 @@
     narrow = window.innerWidth <= 900;
     PAD = narrow ? { t: 16, r: 52, b: 46, l: 46 } : { t: 20, r: 68, b: 46, l: 52 };
     H = narrow
-      ? (fitH || Math.max(210, Math.min(720, Math.round(W * 0.80))))
+      ? (fitH || Math.max(210, Math.min(560, Math.round(W * 0.72))))
       : Math.max(400, Math.min(580, Math.round(W * 0.64)));
     svg.setAttribute("width", W);
     svg.setAttribute("height", H);
@@ -956,25 +960,49 @@
   setCustom(30);
   setPace(300);
 
-  /* On a phone, grow or shrink the plot until the page stops scrolling. */
+  function shellZoom() { return (W ? shell.getBoundingClientRect().width / W : 1) || 1; }
+
+  /* On a phone the three cards fill the screen exactly: the plot holds a landscape
+     aspect, the grid of times stretches into the spare height, and its type grows
+     with the rows so they never read as empty. */
   function fitAndDraw() {
+    tiles.style.height = "";
+    tiles.style.removeProperty("--rowh");
     fitH = 0;
     drawStatic();
-    if (narrow) {
-      const wrap = document.querySelector(".wrap");
-      for (let i = 0; i < 5; i++) {
-        const r = shell.getBoundingClientRect();
-        const z = (W ? r.width / W : 1) || 1;             // .wrap is zoomed on phones
-        // documentElement.scrollHeight never reports below the viewport, so measure
-        // the content itself to see whether there is room left over.
-        const bottom = wrap.getBoundingClientRect().bottom + window.scrollY;
-        const want = Math.max(210, Math.min(720,
-          Math.round(H + (window.innerHeight - bottom) / z)));
-        if (Math.abs(want - H) <= 2) break;
-        fitH = want;
-        drawStatic();
-      }
+    if (!narrow) { paintCursor(); return; }
+
+    const wrap = document.querySelector(".wrap");
+    // documentElement.scrollHeight never reports below the viewport, so measure the
+    // content itself; .wrap is zoomed on phones, so convert back to its own units.
+    const slack = () =>
+      (window.innerHeight - (wrap.getBoundingClientRect().bottom + window.scrollY)) / shellZoom();
+
+    const ROWS = Math.ceil(DIST.length / 2), ROW_MAX = 113, ASPECT_MIN = 1.15;
+
+    // 1. if the page overflows, the plot gives back first
+    let s = slack();
+    for (let i = 0; i < 4 && s < -3; i++) {
+      const want = Math.max(210, Math.round(H + s));
+      if (Math.abs(want - H) <= 2) break;
+      fitH = want;
+      drawStatic();
+      s = slack();
     }
+    // 2. spare room goes to the grid of times, up to a comfortable row height
+    if (s > 4) {
+      const cap = ROW_MAX * ROWS + (ROWS - 1);
+      tiles.style.height = Math.min(cap, Math.round(tiles.offsetHeight + s)) + "px";
+      s = slack();
+    }
+    // 3. the plot takes anything still left, but never past landscape
+    if (s > 4) {
+      const want = Math.min(Math.round(W / ASPECT_MIN), Math.round(H + s));
+      if (want - H > 2) { fitH = want; drawStatic(); }
+    }
+    // rows this tall need type to match, or they read as empty
+    tiles.style.setProperty("--rowh",
+      Math.round((tiles.getBoundingClientRect().height / (shellZoom() || 1)) / ROWS) + "px");
     paintCursor();
   }
 
