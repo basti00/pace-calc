@@ -976,7 +976,16 @@
   setCustom(30);
   setPace(300);
 
-  function shellZoom() { return (W ? shell.getBoundingClientRect().width / W : 1) || 1; }
+  /* .wrap is zoomed on phones, and engines disagree about which units a rect is
+     then in: Blink scales getBoundingClientRect by the zoom, WebKit hands back
+     the element's own layout units. Read the zoom off the element and work out
+     which of the two the rects are in, rather than assuming either. */
+  function zoomInfo() {
+    const cssZoom = parseFloat(getComputedStyle(wrap).zoom) || 1;
+    const r = wrap.offsetWidth ? wrap.getBoundingClientRect().width / wrap.offsetWidth : 1;
+    const scaled = Math.abs(r - cssZoom) < Math.abs(r - 1);
+    return { cssZoom, rectZoom: scaled ? cssZoom : 1 };
+  }
 
   /* On a phone the three cards fill the screen exactly, with the plot absorbing
      whatever height the grid of times and the dial do not need. */
@@ -987,9 +996,13 @@
     if (!narrow) { paintCursor(); return; }
 
     // documentElement.scrollHeight never reports below the viewport, so measure the
-    // content itself; .wrap is zoomed on phones, so convert back to its own units.
-    const slack = () =>
-      (window.innerHeight - (wrap.getBoundingClientRect().bottom + window.scrollY)) / shellZoom();
+    // content itself. Take the card's foot to where it is actually painted, compare
+    // it there against the viewport, and hand the difference back in the plot's units.
+    const slack = () => {
+      const { cssZoom, rectZoom } = zoomInfo();
+      const painted = wrap.getBoundingClientRect().bottom * (cssZoom / rectZoom) + window.scrollY;
+      return (window.innerHeight - painted) / cssZoom;
+    };
 
     // The grid of times keeps its natural size and the plot takes all the rest.
     // The ceiling is only a runaway guard, never reached on a phone-shaped viewport.
@@ -1065,10 +1078,12 @@
       "docEl   " + document.documentElement.clientWidth + " x " + document.documentElement.clientHeight,
       "dpr     " + window.devicePixelRatio,
       "zoom    css " + (getComputedStyle(wrap).zoom || "-") + "   rect/offset " + n(rectRatio),
-      "shellZ  " + n(shellZoom()),
+      "regime  rects " + (zoomInfo().rectZoom === 1 ? "layout (WebKit)" : "scaled (Blink)"),
       "wrap    top " + n(wr.top) + "  bot " + n(wr.bottom) + "  h " + n(wr.height),
       "offsetH " + wrap.offsetHeight,
-      "GAP     " + n(window.innerHeight - wr.bottom) + "   slack " + n(lastSlack),
+      "painted " + n(wr.bottom * (zoomInfo().cssZoom / zoomInfo().rectZoom)),
+      "GAP     " + n(window.innerHeight - wr.bottom * (zoomInfo().cssZoom / zoomInfo().rectZoom)) +
+        "   slack " + n(lastSlack),
       "scrollH " + document.documentElement.scrollHeight + "  scrollY " + n(window.scrollY),
       "plot    " + svg.getAttribute("height") + "  narrow " + narrow,
       "colsH   " + (cols.style.height || "auto"),
