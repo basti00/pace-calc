@@ -99,8 +99,9 @@
   .cols {
     display: grid;
     gap: 18px;
-    grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 410px) minmax(0, 1fr);
     grid-template-areas: "dial chart" "times chart";
+    grid-template-rows: auto 1fr;
     align-content: start;
     align-items: start;
   }
@@ -147,7 +148,10 @@
     font-size: 26px; font-weight: 600; letter-spacing: -0.02em;
   }
   .hero-alt .v small { font-size: 12px; color: var(--muted); font-family: var(--sans); }
-  .hero-alt .mi { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .hero-sub {
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-size: 11.5px; color: var(--muted); margin-top: 3px; white-space: nowrap;
+  }
 
   .bezel { position: relative; height: 13px; }
   .bezel i { position: absolute; bottom: 0; width: 1px; background: var(--axis); transform: translateX(-.5px); }
@@ -207,6 +211,7 @@
     width: 8px; height: 8px; border-radius: 50%;
     background: var(--key); flex: none; align-self: center;
   }
+  .tile-name .qual { font-style: normal; font-weight: 500; color: var(--muted); font-size: .88em; }
   .tile-name {
     font-size: 12.5px; font-weight: 640; color: var(--ink-2);
     white-space: nowrap; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
@@ -233,18 +238,17 @@
   .pace-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; width: 92px; }
 
   .custom-row {
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    padding: 11px 13px 12px; border-top: 1px solid var(--grid); background: var(--surface-2);
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    padding: 9px 12px 10px; border-top: 1px solid var(--grid); background: var(--surface-2);
+    cursor: ew-resize; touch-action: pan-y; user-select: none; -webkit-user-select: none;
   }
+  .custom-row.scrub { background: var(--accent-soft); }
+  .custom-row:focus-within { outline: 2px solid var(--accent); outline-offset: -2px; }
   .dist-val {
     font-family: var(--mono); font-variant-numeric: tabular-nums;
-    font-size: 21px; font-weight: 620; letter-spacing: -0.03em;
-    cursor: ew-resize; touch-action: pan-y; user-select: none; -webkit-user-select: none;
-    padding: 1px 4px; margin: -1px -4px; border-radius: 7px;
+    font-size: 17px; font-weight: 620; letter-spacing: -0.03em; white-space: nowrap;
   }
-  .dist-val.scrub { background: var(--accent-soft); }
-  .dist-val:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-  .custom-row .pace-steps { width: 92px; }
+  .dist-val:focus { outline: none; }
 
   /* ---------- chart ---------- */
   #chart { padding: 16px 16px 10px; display: flex; flex-direction: column; gap: 10px; }
@@ -321,8 +325,14 @@
 
   /* ================= mobile: chart on top, grid in the middle, dial pinned ================= */
   @media (max-width: 900px) {
-    .wrap { padding: 16px 12px 24px; gap: 14px; }
-    .cols { grid-template-columns: minmax(0, 1fr); grid-template-areas: "chart" "times" "dial"; gap: 14px; }
+    /* One phone-sized step down for the whole page; the plot regrows into the slack. */
+    .wrap { --k: 0.75; padding: 16px 12px 24px; gap: 14px; }
+    .cols {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto auto;
+      grid-template-areas: "chart" "times" "dial";
+      gap: 14px;
+    }
 
     #dial {
       position: sticky; bottom: 12px; z-index: 5;
@@ -334,7 +344,8 @@
     }
     .hint, .bezel, #dial .pace-steps { display: none; }
     .dial-track { margin-top: 0; }
-    .hero-read .eyebrow, .hero-alt .eyebrow, .hero-alt .mi { display: none; }
+    .hero-read .eyebrow, .hero-alt .eyebrow { display: none; }
+    .hero-sub { font-size: 12px; margin-top: 2px; }
     .hero-val { font-size: 34px; }
     .hero-alt .v { font-size: 21px; }
 
@@ -351,9 +362,7 @@
     .tile-name { font-size: 12px; }
     .tile-val { font-size: 17px; }
     .step { height: 34px; font-size: 18px; }
-    .custom-row { padding: 8px 11px 9px; }
-    .dist-val { font-size: 17px; }
-    .custom-row .pace-steps { width: 84px; gap: 6px; }
+    .custom-row { padding: 9px 11px 10px; }
     footer { font-size: 11px; }
   }
   /* Short screens (SE-class): trade the chart's subtitle and some air for the fit. */
@@ -377,51 +386,8 @@
     .tile-val { font-size: 15px; }
   }
 
-  /* TEMPORARY — scale probe. Remove once a value is picked. */
-  .scaler {
-    position: fixed; top: 8px; right: 8px; z-index: 50;
-    display: flex; align-items: stretch; gap: 4px;
-    padding: 4px; border-radius: 11px;
-    background: var(--surface); border: 1px solid var(--hair);
-    box-shadow: var(--shadow);
-    font-family: var(--sans);
-  }
-  .scaler button {
-    width: 34px; height: 34px; flex: none;
-    border-radius: 8px; border: 1px solid var(--hair);
-    background: var(--surface-2); color: var(--ink);
-    font-size: 17px; line-height: 1; font-family: var(--sans);
-    display: grid; place-items: center; cursor: pointer;
-    touch-action: manipulation; user-select: none; -webkit-user-select: none;
-  }
-  .scaler button:active { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .scaler button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .scaler .sval {
-    display: flex; flex-direction: column; justify-content: center;
-    align-items: center; min-width: 52px; line-height: 1.1;
-  }
-  .scaler .slab {
-    font-size: 8.5px; font-weight: 620; letter-spacing: .1em;
-    text-transform: uppercase; color: var(--muted);
-  }
-  .scaler .snum {
-    font-family: var(--mono); font-variant-numeric: tabular-nums;
-    font-size: 15px; font-weight: 640; letter-spacing: -0.02em;
-  }
-
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
-
-<!-- TEMPORARY: scale probe. Tell Claude the value that looks right, then this comes out. -->
-<div class="scaler" id="scaler" role="group" aria-label="Interface scale (temporary)">
-  <button id="scaleDown" aria-label="Smaller">−</button>
-  <div class="sval">
-    <span class="slab">Scale</span>
-    <span class="snum" id="scaleVal">1.00</span>
-  </div>
-  <button id="scaleUp" aria-label="Bigger">+</button>
-  <button id="scaleReset" aria-label="Reset to 1.00" title="Reset">↺</button>
-</div>
 
 <div class="wrap">
   <header class="masthead">
@@ -457,16 +423,10 @@
     <section class="card" id="times" aria-label="Finish times">
       <div class="tiles" id="tiles"></div>
       <div class="custom-row">
-        <div>
-          <div class="eyebrow">Custom distance</div>
-          <div class="dist-val" id="distVal" tabindex="0" role="slider"
-               aria-label="Custom distance in kilometres"
-               aria-valuemin="0.4" aria-valuemax="100" aria-valuenow="30">30.0 km</div>
-        </div>
-        <div class="pace-steps">
-          <button class="step" data-dist-step="-0.1" aria-label="Shorter">−</button>
-          <button class="step" data-dist-step="0.1" aria-label="Longer">+</button>
-        </div>
+        <span class="eyebrow">Custom distance</span>
+        <span class="dist-val" id="distVal" tabindex="0" role="slider"
+              aria-label="Custom distance in kilometres — drag or use arrow keys"
+              aria-valuemin="0.4" aria-valuemax="100" aria-valuenow="30">30.0 km</span>
       </div>
     </section>
 
@@ -478,11 +438,12 @@
           <div class="hero-val" id="paceVal">5:00</div>
           <div class="hero-unit">min&thinsp;/&thinsp;km</div>
         </div>
+        <div class="hero-sub" id="miPace">8:03 /mi</div>
       </div>
       <div class="hero-alt">
         <div class="eyebrow">Speed</div>
         <div class="v"><span id="kmhVal">12.0</span> <small>km/h</small></div>
-        <div class="mi" id="miPace">8:03 /mi</div>
+        <div class="hero-sub" id="mphVal">7.5 mph</div>
       </div>
 
       <div class="dial-track">
@@ -554,7 +515,8 @@
     tile.style.setProperty("--key", `var(--s${d.slot})`);
 
     const dot = document.createElement("span"); dot.className = "dot";
-    const nm = document.createElement("span"); nm.className = "tile-name"; nm.textContent = d.tile;
+    const nm = document.createElement("span");
+    nm.className = "tile-name"; nm.id = d.id + "-name"; nm.textContent = d.tile;
     const km = document.createElement("span"); km.className = "tile-km"; km.id = d.id + "-km";
     const val = document.createElement("span"); val.className = "tile-val"; val.id = d.id + "-val";
 
@@ -575,9 +537,9 @@
 
   /* ---------- pace bezel ticks ---------- */
   const bezel = $("bezel");
-  for (let p = PMIN; p <= PMAX; p += 30) {
+  for (let p = 180; p <= PMAX; p += 60) {
     const pct = (p - PMIN) / (PMAX - PMIN) * 100;
-    const major = p % 60 === 0;
+    const major = p % 120 === 0;
     const i = document.createElement("i");
     i.className = major ? "maj" : "min";
     i.style.left = `calc(15px + ${pct}% - ${pct * 0.30}px)`;
@@ -591,12 +553,14 @@
   }
 
   /* ---------- readouts ---------- */
-  const paceValEl = $("paceVal"), kmhEl = $("kmhVal"), miEl = $("miPace"), slider = $("paceSlider");
+  const paceValEl = $("paceVal"), kmhEl = $("kmhVal"), miEl = $("miPace"),
+        mphEl = $("mphVal"), slider = $("paceSlider");
 
   function renderReadouts() {
     paceValEl.textContent = fmtPace(state.pace);
     kmhEl.textContent = (3600 / state.pace).toFixed(1);
     miEl.textContent = fmtPace(state.pace * KM_PER_MI) + " /mi";
+    mphEl.textContent = (3600 / state.pace / KM_PER_MI).toFixed(1) + " mph";
     slider.value = String(state.pace);
 
     DIST.forEach(d => {
@@ -624,6 +588,10 @@
     d.step = Math.max(2, Math.round(state.custom));
     $("dcu-lgf").textContent = "Custom · " + fmtKm(state.custom) + " km";
     $("dcu-lgs").textContent = d.short;
+    const nm = $("dcu-name");
+    nm.textContent = fmtKm(state.custom) + "K ";
+    nm.append(Object.assign(document.createElement("i"),
+      { className: "qual", textContent: "(custom)" }));
     renderReadouts();
     fitAndDraw();
     buildTable();
@@ -646,7 +614,6 @@
 
   const T_TICKS = [600,900,1200,1500,1800,2400,3000,3600,4500,5400,7200,9000,10800,14400,18000,21600,28800,36000,43200,54000,72000];
   const P_TICKS = [180,240,300,360,420,480,540,600];
-  const KMH_TICKS = [20,16,14,12,10,9,8,7,6];
 
   let staticG, cursorG, cursorLine, dots = [], labels = [];
 
@@ -656,7 +623,7 @@
     narrow = window.innerWidth <= 900;
     PAD = narrow ? { t: 16, r: 52, b: 46, l: 46 } : { t: 20, r: 68, b: 46, l: 52 };
     H = narrow
-      ? (fitH || Math.max(210, Math.min(400, Math.round(W * 0.80))))
+      ? (fitH || Math.max(210, Math.min(720, Math.round(W * 0.80))))
       : Math.max(400, Math.min(580, Math.round(W * 0.64)));
     svg.setAttribute("width", W);
     svg.setAttribute("height", H);
@@ -722,8 +689,7 @@
     });
 
     // vertical gridlines + pace ticks
-    const pTicks = narrow ? P_TICKS.filter(p => p % 120 === 60 || p === 180) : P_TICKS;
-    pTicks.forEach(p => {
+    P_TICKS.forEach(p => {
       const x = xOf(p);
       staticG.append(el("line", { x1: x, x2: x, y1: PAD.t, y2: H - PAD.b, stroke: gridC, "stroke-width": 1 }));
       const lb = el("text", { x, y: H - PAD.b + 17, "text-anchor": "middle",
@@ -736,10 +702,9 @@
     staticG.append(el("line", { x1: PAD.l, x2: W - PAD.r, y1: H - PAD.b, y2: H - PAD.b, stroke: axisC, "stroke-width": 1 }));
     staticG.append(el("line", { x1: PAD.l, x2: PAD.l, y1: PAD.t, y2: H - PAD.b, stroke: axisC, "stroke-width": 1 }));
 
-    // same axis, second labelling: speed
-    (narrow ? [20, 14, 10, 8, 6] : KMH_TICKS).forEach(v => {
-      const p = 3600 / v;
-      if (p < PMIN || p > PMAX) return;
+    // the same axis relabelled in km/h — same ticks, so the two rows read as one scale
+    P_TICKS.forEach(p => {
+      const v = (3600 / p).toFixed(1);
       const x = xOf(p);
       staticG.append(el("line", { x1: x, x2: x, y1: H - PAD.b + 24, y2: H - PAD.b + 28, stroke: axisC, "stroke-width": 1 }));
       const lb = el("text", { x, y: H - PAD.b + 39, "text-anchor": "middle",
@@ -917,7 +882,8 @@
     });
   });
 
-  scrubbable(distValEl, () => state.custom, setCustom, 0.05);
+  const customRow = document.querySelector(".custom-row");
+  scrubbable(customRow, () => state.custom, setCustom, 0.05);
   distValEl.addEventListener("keydown", e => {
     const s = e.shiftKey ? 1 : 0.1;
     if (e.key === "ArrowRight" || e.key === "ArrowUp") { setCustom(state.custom + s); e.preventDefault(); }
@@ -937,14 +903,8 @@
   document.addEventListener("pointercancel", stopHold);
 
   document.querySelectorAll(".step").forEach(btn => {
-    let fn;
-    if (btn.dataset.paceStep) {
-      const s = Number(btn.dataset.paceStep);
-      fn = () => setPace(state.pace + s);
-    } else {
-      const s = Number(btn.dataset.distStep);
-      fn = () => setCustom(state.custom + s);
-    }
+    const s = Number(btn.dataset.paceStep);
+    const fn = () => setPace(state.pace + s);
     btn.addEventListener("pointerdown", e => { e.preventDefault(); startHold(fn); });
     btn.addEventListener("click", e => e.preventDefault());
     btn.addEventListener("keydown", e => {
@@ -1001,11 +961,15 @@
     fitH = 0;
     drawStatic();
     if (narrow) {
-      for (let i = 0; i < 4; i++) {
+      const wrap = document.querySelector(".wrap");
+      for (let i = 0; i < 5; i++) {
         const r = shell.getBoundingClientRect();
-        const z = W ? r.width / W : 1;                    // .wrap may be zoomed
-        const slack = (window.innerHeight - document.documentElement.scrollHeight) / (z || 1);
-        const want = Math.max(210, Math.min(400, Math.round(H + slack)));
+        const z = (W ? r.width / W : 1) || 1;             // .wrap is zoomed on phones
+        // documentElement.scrollHeight never reports below the viewport, so measure
+        // the content itself to see whether there is room left over.
+        const bottom = wrap.getBoundingClientRect().bottom + window.scrollY;
+        const want = Math.max(210, Math.min(720,
+          Math.round(H + (window.innerHeight - bottom) / z)));
         if (Math.abs(want - H) <= 2) break;
         fitH = want;
         drawStatic();
@@ -1024,22 +988,5 @@
   window.matchMedia("(prefers-color-scheme: dark)")
     .addEventListener("change", fitAndDraw);
 
-  /* ---------- TEMPORARY: scale probe ---------- */
-  const SCALE_KEY = "pf-scale", scaleValEl = $("scaleVal");
-  let scale = 1;
-  function setScale(v) {
-    scale = Math.min(1.40, Math.max(0.55, Math.round(v * 20) / 20));
-    document.documentElement.style.setProperty("--k", scale);
-    scaleValEl.textContent = scale.toFixed(2);
-    try { localStorage.setItem(SCALE_KEY, String(scale)); } catch (_) {}
-    clearTimeout(rt);
-    rt = setTimeout(fitAndDraw, 60);
-  }
-  $("scaleDown").addEventListener("click", () => setScale(scale - 0.05));
-  $("scaleUp").addEventListener("click", () => setScale(scale + 0.05));
-  $("scaleReset").addEventListener("click", () => setScale(1));
-  let saved = 1;
-  try { saved = parseFloat(localStorage.getItem(SCALE_KEY)) || 1; } catch (_) {}
-  setScale(saved);
 })();
 </script>

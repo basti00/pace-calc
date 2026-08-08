@@ -11,7 +11,8 @@ kilometre — so changing any one value updates the rest.
 On a phone the whole thing fits one screen with no scrolling: the chart takes the full width at
 the top, a two-column grid of the six finish times fills the middle, and the pace slider sits at
 the bottom. The chart measures the leftover viewport height and sizes itself to fill it, so the
-fit holds from a 375x667 phone upward. On a wide screen the dial and the grid move into a left
+fit holds from a 375x667 phone upward. Phones render the page one step down in scale, which is
+where the chart gets its room. On a wide screen the dial and the grid move into a left
 rail beside the chart.
 
 ## Input without a keyboard
@@ -21,8 +22,9 @@ Built for a phone, so nothing requires typing:
 - the slider under the pace readout
 - horizontal drag on any distance row, with per-distance sensitivity (dragging the marathon row
   moves in minutes, the 5K row in seconds)
+- horizontal drag on the custom-distance row to change the distance
 - dragging the marker anywhere in the chart
-- `−` / `+` steppers for pace and for the custom distance, with press-and-hold repeat
+- `−` / `+` steppers for pace, with press-and-hold repeat
 
 All of it is reachable by keyboard and screen reader as well.
 
