@@ -995,11 +995,28 @@
   }
 
   let rt = 0;
-  new ResizeObserver(() => {
+  const refit = (delay) => {
     clearTimeout(rt);
-    rt = setTimeout(fitAndDraw, 60);
-  }).observe(shell);
+    rt = setTimeout(fitAndDraw, delay);
+  };
+  new ResizeObserver(() => refit(60)).observe(shell);
   window.addEventListener("orientationchange", () => setTimeout(fitAndDraw, 120));
+
+  /* The shell observer only ever sees width. A phone browser that hides its
+     toolbars grows the viewport's height alone, which would otherwise leave the
+     plot at its old size and a band of ground below the dial. */
+  let lastH = window.innerHeight;
+  const onViewportResize = () => {
+    const h = window.innerHeight;
+    if (h === lastH) return;   // pinch-zoom and toolbar scroll fire without a height change
+    lastH = h;
+    refit(120);                // outlast the toolbar's own slide
+  };
+  window.addEventListener("resize", onViewportResize);
+  window.visualViewport?.addEventListener("resize", onViewportResize);
+
+  /* A late webfont changes the tiles' natural height after the first fit. */
+  document.fonts?.ready.then(() => refit(0));
 
   window.matchMedia("(prefers-color-scheme: dark)")
     .addEventListener("change", fitAndDraw);
