@@ -19,10 +19,12 @@ rail beside the chart.
 
 Built for a phone, so nothing requires typing:
 
-- the slider under the pace readout, in whole seconds per km
+- the slider under the pace readout, in even seconds per km (the `−` / `+` steppers and the
+  arrow keys keep to the same 2s grid)
 - horizontal drag on any distance row, which lands on that distance's own grid of round finish
   times — 5s for the 5K, 10s for the 10K, 15s for the 15K, 30s for the half, a minute for the
-  marathon — one step per 8 px of travel
+  marathon. A slow drag moves one step per 14 px; a fast, wide swipe accelerates up to 10× that,
+  so the whole range stays within one flick.
 - horizontal drag on the custom-distance row to change the distance
 - dragging the marker anywhere in the chart, which stays continuous and snaps to nothing
 - `−` / `+` steppers for pace, with press-and-hold repeat
@@ -31,9 +33,11 @@ The pace itself is held as a fraction of a second, so whichever row you are hold
 on its own grid. A round marathon time therefore puts the 10K between its snap points, and vice
 versa; grabbing the other row pulls it back onto its own grid, at most half a step away.
 
-Temporary: `?expo` opens a panel for tuning the swipe. It adds an optional velocity gain — flick
-fast and wide to jump far, move slowly for single steps — and can be switched off in place to
-compare against the plain linear scrub. Settings persist in `localStorage`.
+Temporary: `?expo` loads `expo.js`, a panel for tuning that acceleration curve — its onset and
+full-gain speeds, the maximum gain, the exponent between them, and the smoothing on the speed
+estimate. It can be switched off in place to compare against a plain linear scrub. Values tuned
+there persist in `localStorage` but apply only to a `?expo` load; a plain load always uses the
+defaults in `index.html`. Nothing is fetched without the parameter.
 
 All of it is reachable by keyboard and screen reader as well.
 

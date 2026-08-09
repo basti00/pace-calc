@@ -396,51 +396,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
-
-  /* ---------- TEMPORARY: swipe-feel tuning panel (?expo) ---------- */
-  #expoPanel {
-    position: fixed; top: 6px; left: 6px; z-index: 50; width: 178px;
-    background: var(--surface); border: 1px solid var(--axis); border-radius: 10px;
-    box-shadow: var(--shadow); padding: 6px 8px 7px;
-    font-family: var(--sans); font-size: 10px; line-height: 1.35; color: var(--ink-2);
-  }
-  #expoPanel[hidden] { display: none; }
-  #expoPanel h4 {
-    margin: 0; font-size: 9.5px; font-weight: 640; color: var(--ink);
-    letter-spacing: .08em; text-transform: uppercase;
-    display: flex; align-items: center; gap: 6px;
-  }
-  #expoPanel h4 button {
-    margin-left: auto; border: 0; background: none; color: var(--muted);
-    font: inherit; font-size: 13px; line-height: 1; cursor: pointer; padding: 0 2px;
-  }
-  #expoPanel.min .ex-body { display: none; }
-  .ex-body { display: grid; gap: 3px; margin-top: 6px; }
-  .ex-row { display: grid; grid-template-columns: 48px 1fr 28px; align-items: center; gap: 5px; }
-  .ex-row input[type=range] { height: 16px; }
-  .ex-row input[type=range]::-webkit-slider-runnable-track { height: 3px; }
-  .ex-row input[type=range]::-webkit-slider-thumb { width: 13px; height: 13px; border-width: 2px; margin-top: -5.5px; }
-  .ex-row input[type=range]::-moz-range-thumb { width: 11px; height: 11px; border-width: 2px; }
-  .ex-row i {
-    font-family: var(--mono); font-style: normal; font-size: 9.5px;
-    text-align: right; color: var(--ink);
-  }
-  .ex-toggle {
-    display: flex; align-items: center; gap: 5px;
-    font-size: 10.5px; font-weight: 620; color: var(--ink);
-  }
-  .ex-toggle input { width: 13px; height: 13px; margin: 0; accent-color: var(--accent); }
-  .ex-meter {
-    font-family: var(--mono); font-size: 9.5px; color: var(--muted);
-    border-top: 1px solid var(--grid); margin-top: 4px; padding-top: 4px;
-  }
-  .ex-meter b { color: var(--accent); font-weight: 620; }
-  .ex-note { color: var(--muted); font-size: 9px; line-height: 1.3; }
-  .ex-note button {
-    font: inherit; font-size: 9px; color: var(--ink-2); cursor: pointer;
-    background: var(--surface-2); border: 1px solid var(--hair);
-    border-radius: 5px; padding: 1px 6px; margin-left: 2px;
-  }
 </style>
 
 <div class="wrap">
@@ -503,36 +458,20 @@
 
       <div class="dial-track">
         <div class="bezel" id="bezel"></div>
-        <input type="range" id="paceSlider" min="150" max="600" step="1" value="300"
+        <input type="range" id="paceSlider" min="150" max="600" step="2" value="300"
                aria-label="Pace in seconds per kilometre">
       </div>
 
       <div class="hint">Drag the dial, a distance row, or the chart.</div>
       <div class="pace-steps">
-        <button class="step" data-pace-step="1" aria-label="One second per km slower">−</button>
-        <button class="step" data-pace-step="-1" aria-label="One second per km faster">+</button>
+        <button class="step" data-pace-step="2" aria-label="Two seconds per km slower">−</button>
+        <button class="step" data-pace-step="-2" aria-label="Two seconds per km faster">+</button>
       </div>
     </section>
   </div>
 
   <footer>Half marathon 21.0975 km · marathon 42.195 km. Times assume an even split.</footer>
 </div>
-
-<!-- TEMPORARY: swipe-feel tuning, shown only for ?expo. Delete with the TUNE block. -->
-<aside id="expoPanel" hidden>
-  <h4>Swipe feel <button type="button" id="exMin" aria-label="collapse">–</button></h4>
-  <div class="ex-body">
-    <label class="ex-toggle"><input type="checkbox" id="exOn"> Expo acceleration</label>
-    <div class="ex-row"><span>px / step</span><input type="range" id="exPx"    min="3"   max="24"   step="1"><i id="exPxV"></i></div>
-    <div class="ex-row"><span>start px/s</span><input type="range" id="exV0"   min="50"  max="900"  step="10"><i id="exV0V"></i></div>
-    <div class="ex-row"><span>full px/s</span><input type="range" id="exV1"    min="600" max="4000" step="50"><i id="exV1V"></i></div>
-    <div class="ex-row"><span>max gain</span><input type="range" id="exGmax"   min="1"   max="14"   step="0.5"><i id="exGV"></i></div>
-    <div class="ex-row"><span>curve</span><input type="range" id="exCurve"     min="0.6" max="3"    step="0.1"><i id="exCV"></i></div>
-    <div class="ex-row"><span>smoothing</span><input type="range" id="exEase"  min="0.05" max="1"   step="0.05"><i id="exEV"></i></div>
-    <div class="ex-meter">v <b id="exSpd">0</b> px/s · gain <b id="exG">1.0</b>× · peak <b id="exPk">1.0</b>×</div>
-    <div class="ex-note">Off = plain linear scrub, for A/B. Settings persist; “reset” restores the defaults. <button type="button" id="exReset">reset</button></div>
-  </div>
-</aside>
 
 <script>
 (() => {
@@ -581,6 +520,7 @@
      snapped finish time a second or two off its grid on the way back out. */
   const clampPace = p => Math.min(PMAX, Math.max(PMIN, p));
   const snapTo = (v, q) => Math.round(v / q) * q;
+  const PACE_SNAP = 2;   // the pace controls land on even seconds per km
   const $ = id => document.getElementById(id);
 
   /* ---------- build the tiles & legend ---------- */
@@ -643,7 +583,7 @@
     kmhEl.textContent = (3600 / state.pace).toFixed(1);
     miEl.textContent = fmtPace(state.pace * KM_PER_MI) + " /mi";
     mphEl.textContent = (3600 / state.pace / KM_PER_MI).toFixed(1) + " mph";
-    slider.value = String(Math.round(state.pace));
+    slider.value = String(snapTo(state.pace, PACE_SNAP));
 
     DIST.forEach(d => {
       const t = state.pace * d.km;
@@ -929,8 +869,8 @@
     hit.addEventListener("pointerup", end);
     hit.addEventListener("pointercancel", end);
     hit.addEventListener("keydown", e => {
-      const big = e.shiftKey ? 10 : 1;
-      const p = Math.round(state.pace);
+      const big = e.shiftKey ? 10 : PACE_SNAP;
+      const p = snapTo(state.pace, PACE_SNAP);
       if (e.key === "ArrowRight" || e.key === "ArrowUp") { setPace(p + big); e.preventDefault(); }
       if (e.key === "ArrowLeft" || e.key === "ArrowDown") { setPace(p - big); e.preventDefault(); }
     });
@@ -941,16 +881,15 @@
      Open the page with ?expo to get the tuning panel; the mode is off by default,
      so a plain load is the normal, linear scrub. */
   const TUNE_DEFAULTS = {
-    on: false,   // velocity gain off → one snap step per `px` pixels, always
-    px: 8,       // pixels of travel per snap step at gain 1
-    v0: 260,     // px/s where the gain starts to lift off 1
-    v1: 2200,    // px/s where it reaches gmax
-    gmax: 6,     // top multiplier
-    curve: 1.6,  // >1 keeps the low end docile and saves the punch for real flicks
-    ease: 0.3,   // EMA on the speed estimate; lower is smoother but laggier
+    on: true,    // velocity gain; off → one snap step per `px` pixels, always
+    px: 14,      // pixels of travel per snap step at gain 1
+    v0: 50,      // px/s where the gain starts to lift off 1
+    v1: 600,     // px/s where it reaches gmax
+    gmax: 10,    // top multiplier
+    curve: 3.0,  // >1 keeps the low end docile and saves the punch for real flicks
+    ease: 0.8,   // EMA on the speed estimate; lower is smoother but laggier
   };
   const TUNE = Object.assign({}, TUNE_DEFAULTS);
-  try { Object.assign(TUNE, JSON.parse(localStorage.getItem("paceSwipeTune") || "{}")); } catch (_) {}
 
   let onGain = null;   // the panel hooks in here to show live speed/gain
 
@@ -1034,7 +973,7 @@
     if (e.key === "ArrowLeft" || e.key === "ArrowDown") { setCustom(state.custom - s); e.preventDefault(); }
   });
 
-  slider.addEventListener("input", () => setPace(Math.round(Number(slider.value))));
+  slider.addEventListener("input", () => setPace(snapTo(Number(slider.value), PACE_SNAP)));
 
   // steppers, with press-and-hold repeat
   let holdT = 0, holdI = 0;
@@ -1048,7 +987,7 @@
 
   document.querySelectorAll(".step").forEach(btn => {
     const s = Number(btn.dataset.paceStep);
-    const fn = () => setPace(Math.round(state.pace) + s);   // back onto whole seconds first
+    const fn = () => setPace(snapTo(state.pace, PACE_SNAP) + s);   // back onto the even grid first
     btn.addEventListener("pointerdown", e => { e.preventDefault(); startHold(fn); });
     btn.addEventListener("click", e => e.preventDefault());
     btn.addEventListener("keydown", e => {
@@ -1105,55 +1044,16 @@
       `[${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}]`;
   }
 
-  /* TEMPORARY: the tuning panel. Only ?expo (or #expo) brings it up, so a normal
-     load never pays for it. Remove this block together with the TUNE block. */
+  /* TEMPORARY: the swipe-tuning panel lives in expo.js and is only fetched for
+     ?expo, so a normal load neither downloads nor pays for it. It edits TUNE in
+     place. Deleting expo.js and this block leaves the defaults above in force. */
   if (/(^|[?&#])expo\b/.test(location.search + location.hash)) {
-    const panel = $("expoPanel");
-    panel.hidden = false;
-
-    const FIELDS = [
-      ["exPx",    "px",    v => String(v)],
-      ["exV0",    "v0",    v => String(v)],
-      ["exV1",    "v1",    v => String(v)],
-      ["exGmax",  "gmax",  v => v.toFixed(1) + "×"],
-      ["exCurve", "curve", v => v.toFixed(1)],
-      ["exEase",  "ease",  v => v.toFixed(2)],
-    ];
-    const OUT = { exPx: "exPxV", exV0: "exV0V", exV1: "exV1V",
-                  exGmax: "exGV", exCurve: "exCV", exEase: "exEV" };
-    const save = () => { try { localStorage.setItem("paceSwipeTune", JSON.stringify(TUNE)); } catch (_) {} };
-
-    function sync() {
-      $("exOn").checked = TUNE.on;
-      FIELDS.forEach(([id, key, fmt]) => {
-        $(id).value = String(TUNE[key]);
-        $(OUT[id]).textContent = fmt(TUNE[key]);
-      });
-    }
-    FIELDS.forEach(([id, key, fmt]) => {
-      $(id).addEventListener("input", () => {
-        TUNE[key] = Number($(id).value);
-        $(OUT[id]).textContent = fmt(TUNE[key]);
-        save();
-      });
-    });
-    $("exOn").addEventListener("change", () => { TUNE.on = $("exOn").checked; save(); });
-    $("exReset").addEventListener("click", () => { Object.assign(TUNE, TUNE_DEFAULTS); save(); sync(); });
-    $("exMin").addEventListener("click", () => {
-      const min = panel.classList.toggle("min");
-      $("exMin").textContent = min ? "+" : "–";
-    });
-    sync();
-
-    // Live speed and gain, so a swipe that felt wrong can be read off afterwards.
-    const spdEl = $("exSpd"), gEl = $("exG"), pkEl = $("exPk");
-    let peak = 1;
-    onGain = (sp, g, start) => {
-      if (start) { peak = 1; pkEl.textContent = "1.0"; }
-      if (g > peak) { peak = g; pkEl.textContent = peak.toFixed(1); }
-      spdEl.textContent = String(Math.round(sp));
-      gEl.textContent = g.toFixed(1);
+    window.__paceExpo = {
+      tune: TUNE,
+      defaults: TUNE_DEFAULTS,
+      onGain: fn => { onGain = fn; },
     };
+    document.body.append(Object.assign(document.createElement("script"), { src: "expo.js" }));
   }
 
   setCustom(30);
