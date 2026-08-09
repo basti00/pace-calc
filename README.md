@@ -20,7 +20,8 @@ rail beside the chart.
 Built for a phone, so nothing requires typing:
 
 - the slider under the pace readout, in even seconds per km (the `−` / `+` steppers and the
-  arrow keys keep to the same 2s grid)
+  arrow keys keep to the same 2s grid). Press anywhere in the band and the thumb comes to the
+  finger — no hunting for it, which a native range on iOS would otherwise require.
 - horizontal drag on any distance row, which lands on that distance's own grid of round finish
   times — 5s for the 5K, 10s for the 10K, 15s for the 15K, 30s for the half, a minute for the
   marathon. A slow drag moves one step per 14 px; a fast, wide swipe accelerates up to 10× that,
@@ -28,6 +29,12 @@ Built for a phone, so nothing requires typing:
 - horizontal drag on the custom-distance row to change the distance
 - dragging the marker anywhere in the chart, which stays continuous and snaps to nothing
 - `−` / `+` steppers for pace, with press-and-hold repeat
+
+A touch that starts on the grid, the slider band or the chart is always a value change, never a
+scroll: those surfaces take the whole gesture (`touch-action: none`), so a swipe that drifts off
+the horizontal is not handed back to the scroller halfway through, and the pull-to-refresh pull
+cannot start there either. The consequence is that with the table view open you scroll the page
+from the chart's header, the table itself or the gaps between the cards.
 
 The pace itself is held as a fraction of a second, so whichever row you are holding sits exactly
 on its own grid. A round marathon time therefore puts the 10K between its snap points, and vice
